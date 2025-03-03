@@ -23,8 +23,8 @@ void led_update_task(void *pvParameters)
         if (contactNotFound)
           g_alarm_led_off_delay = 600;  
         else
-          g_alarm_led_off_delay = ((g_tempAlarm || g_powerAlarm) ? 1500 : 5000);
-        vTaskDelay(pdMS_TO_TICKS(2000));
+          g_alarm_led_off_delay = ((g_tempAlarm || g_powerAlarm) ? 1000 : 5000);
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 
@@ -32,19 +32,19 @@ void setup() {
     Serial.begin(115200);
     Serial2.begin(9600, SERIAL_8N1, 16, 17); // Adjust baud rate as needed for SIM900.
     ESP_LOGI("MAIN", "System starting up.");
-    xTaskCreate(sim900_task_monitor, "SIM900MonitorTask", 4096, NULL, 5, NULL);
-    // Wake up SIM900.
-    sim900_wakeup();
-    g_sim900Ready = true;
-    sim900_is_ready();
-    // Read contact info from SIM phonebook at index 99.
-    char password[64];
-    char recipient[32];
-    if (!sim900_get_contact_info(99, password, sizeof(password), recipient, sizeof(recipient))) {
-      contactNotFound = true;
-      ESP_LOGE("MAIN", "Failed to retrieve contact info from SIM.");
-    }
     
+    // Wake up SIM900.
+    //ESP_LOGD("MAIN", "Wake up sim900.");
+    //sim900_wakeup();
+    validateStateOn();
+    ESP_LOGD("MAIN", "Checking sim900 status.");
+    sim900_is_ready();
+    ESP_LOGD("MAIN", "The sim900 should be ready.");
+
+    // Retrieve contacts from SIM (indices 99 to 104).
+    int nbContacts = sim900_get_contacts();
+    ESP_LOGD("MAIN", "Got %d contact(s) from sim900, start monitoring task.", nbContacts);
+    xTaskCreate(sim900_task_monitor, "SIM900MonitorTask", 4096, NULL, 5, NULL);
     // Create the temperature alert queue.
     xTempAlertQueue = xQueueCreate(10, sizeof(int));
     if (xTempAlertQueue == NULL) {

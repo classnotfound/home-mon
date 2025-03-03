@@ -20,6 +20,9 @@ void temp_sensor_task_measure(void *pvParameters);
 // RTOS task for sending SMS alerts when temperature thresholds are exceeded.
 void temp_sensor_task_alert(void *pvParameters);
 
+// Global average temperature computed in the measurement task.
+extern volatile float g_temperatureAvg;
+
 #ifdef __cplusplus
 }
 #endif

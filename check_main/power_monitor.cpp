@@ -45,7 +45,7 @@ void power_monitor_task(void *pvParameters)
                 if (!powerAlarmSent) {
                     ESP_LOGI(TAG, "Power loss confirmed.");
                     if (g_alertingEnabled) {
-                        sim900_send_sms(g_smsRecipient, "ALERT: Power loss detected!");
+                        sim900_send_alert("ALERT: Power loss detected!");
                     } else {
                         ESP_LOGI(TAG, "Alerting disabled; power loss SMS not sent.");
                     }
@@ -59,7 +59,7 @@ void power_monitor_task(void *pvParameters)
         if (digitalRead(POWER_PIN) == HIGH && powerAlarmSent) {
             ESP_LOGI(TAG, "Power restored.");
             if (g_alertingEnabled) {
-                sim900_send_sms(g_smsRecipient, "ALERT: Power has been restored!");
+                sim900_send_alert("ALERT: Power has been restored!");
             } else {
                 ESP_LOGI(TAG, "Alerting disabled; power restored SMS not sent.");
             }
@@ -67,6 +67,6 @@ void power_monitor_task(void *pvParameters)
             g_powerAlarm = false;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(60000));
+        vTaskDelay(pdMS_TO_TICKS(180000));
     }
 }
