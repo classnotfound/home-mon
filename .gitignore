@@ -1,0 +1,16 @@
+# Ignore temporary files
+*.bak
+*.swp
+
+# Ignore generated files
+*.drl
+*.gbr
+*.kicad_wks
+
+# Ignore backup files
+*.kicad_sch-bak
+*.kicad_pcb-bak
+~*
+**/*-backups
+
+**/*-cache
