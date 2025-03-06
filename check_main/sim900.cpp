@@ -6,6 +6,7 @@
 #include "power_monitor.h" // for power_status()
 #include "status_led.h"
 #include "freertos/semphr.h"
+#include "battery_monitor.h" // for g_batteryVoltage
 
 static SemaphoreHandle_t sim900_mutex = NULL;
 
@@ -314,8 +315,8 @@ void sim900_send_full_status_sms_to(const char* recipient)
     snprintf(powerStatus, sizeof(powerStatus), "%s", powerOk ? "OK" : "Lost");
     int nbContacts = countDefinedContacts();
     snprintf(statusMessage, sizeof(statusMessage),
-             "%s\nTemperature: %.2f C\nPower: %s\nNb contacts: %d",
-             simStatus, g_temperatureAvg, powerStatus, nbContacts);
+             "%s\nTemperature: %.2f C\nPower: %s\nBattery voltage: %.2f\nNb contacts: %d",
+             simStatus, g_temperatureAvg, powerStatus, g_batteryVoltage, nbContacts);
     ESP_LOGI(TAG, "Full status SMS message: %s", statusMessage);
     sim900_send_sms(recipient, statusMessage);
 }
