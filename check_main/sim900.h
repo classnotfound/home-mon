@@ -56,6 +56,8 @@ void sim900_task_check_sms(void *pvParameters);
 // Task to monitor SIM900 status and reset it if unresponsive.
 void sim900_task_monitor(void *pvParameters);
 
+bool sim900_get_time(char* timeStr, int maxLen);
+
 extern volatile bool g_sim900Ready;
 
 // Global flag to control alerting (true by default).

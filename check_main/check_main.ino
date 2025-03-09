@@ -2,11 +2,16 @@
 #include "sim900.h"
 #include "temp_sensor.h"
 #include "power_monitor.h"
+#include "battery_monitor.h"
 #include "status_led.h"
+#include "time_monitor.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_log.h"
+
+#include <WiFi.h>
+#include "esp_bt.h"
 
 // Create the temperature alert queue.
 QueueHandle_t xTempAlertQueue;
@@ -32,6 +37,8 @@ void setup() {
     Serial.begin(115200);
     Serial2.begin(9600, SERIAL_8N1, 16, 17); // Adjust baud rate as needed for SIM900.
     ESP_LOGI("MAIN", "System starting up.");
+    esp_bt_controller_disable();
+    WiFi.mode(WIFI_OFF);      // Disable WiFi
     
     // Wake up SIM900.
     //ESP_LOGD("MAIN", "Wake up sim900.");
@@ -41,6 +48,7 @@ void setup() {
     sim900_is_ready();
     ESP_LOGD("MAIN", "The sim900 should be ready.");
 
+    time_monitor_init();
     // Retrieve contacts from SIM (indices 99 to 104).
     int nbContacts = sim900_get_contacts();
     ESP_LOGD("MAIN", "Got %d contact(s) from sim900, start monitoring task.", nbContacts);
@@ -52,11 +60,13 @@ void setup() {
     }
     
     // Create FreeRTOS tasks.
-    xTaskCreate(sim900_task_check_sms, "SMSCheckTask", 4096, NULL, 2, NULL);
+    xTaskCreate(sim900_task_check_sms, "SMSCheckTask", 8192, NULL, 2, NULL);
     xTaskCreate(temp_sensor_task_measure, "TempMeasureTask", 4096, NULL, 5, NULL);
     xTaskCreate(temp_sensor_task_alert, "TempAlertTask", 4096, NULL, 5, NULL);
     power_monitor_init();
     xTaskCreate(power_monitor_task, "PowerMonitorTask", 4096, NULL, 5, NULL);
+    battery_monitor_init();
+    xTaskCreate(battery_monitor_task, "BatteryMonitorTask", 4096, NULL, 5, NULL);
     xTaskCreate(board_status_led_task, "BoardLEDTask", 2048, NULL, 1, NULL);
     xTaskCreate(alarm_status_led_task, "AlarmLEDTask", 2048, NULL, 1, NULL);
     xTaskCreate(led_update_task, "LEDUpdateTask", 2048, NULL, 1, NULL);

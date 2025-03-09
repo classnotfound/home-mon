@@ -14,7 +14,7 @@
 #define DS18B20_PIN 32
 
 // Temperature thresholds and hysteresis.
-#define TEMP_LOW_THRESHOLD   5.0f
+#define TEMP_LOW_THRESHOLD   6.0f 
 #define TEMP_HIGH_THRESHOLD  70.0f
 #define TEMP_HYSTERESIS       1.0f
 #define TEMP_SAMPLE_COUNT    5
@@ -118,7 +118,7 @@ void temp_sensor_task_measure(void *pvParameters)
         }
       }
     }
-    vTaskDelay(pdMS_TO_TICKS(300000));
+    vTaskDelay(pdMS_TO_TICKS(30000));//should be each 10 minutes!
   }
 }
 

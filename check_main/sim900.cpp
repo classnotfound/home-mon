@@ -7,6 +7,7 @@
 #include "status_led.h"
 #include "freertos/semphr.h"
 #include "battery_monitor.h" // for g_batteryVoltage
+#include "time_monitor.h"
 
 static SemaphoreHandle_t sim900_mutex = NULL;
 
@@ -215,6 +216,34 @@ void sim900_send_alert(const char* msg)
     }
 }
 
+bool sim900_get_time(char* timeStr, int maxLen) {
+    char buffer[128];
+    if (!sendATCommand("AT+CCLK?", buffer, sizeof(buffer), "OK", 3000)) {
+        ESP_LOGE(TAG, "Failed to get time from SIM900.");
+        return false;
+    }
+    ESP_LOGI(TAG, "Raw time response: %s", buffer);
+    // Look for the first double-quote character.
+    char* start = strchr(buffer, '\"');
+    if (start != NULL) {
+        start++;  // Skip the first quote.
+        char* end = strchr(start, '\"');
+        if (end != NULL) {
+            size_t len = end - start;
+            if (len >= (size_t)maxLen) {
+                len = maxLen - 1;
+            }
+            strncpy(timeStr, start, len);
+            timeStr[len] = '\0';
+            ESP_LOGI(TAG, "Parsed network time: %s", timeStr);
+            return true;
+        }
+    }
+    ESP_LOGE(TAG, "Failed to parse network time.");
+    return false;
+}
+
+
 bool sim900_send_sms(const char* recipient, const char* message)
 {
     ESP_LOGI(TAG, "Sending SMS to %s", recipient);
@@ -290,8 +319,8 @@ int countDefinedContacts(void) {
 void sim900_send_full_status_sms_to(const char* recipient)
 {
     ESP_LOGI(TAG, "Composing full status SMS for %s.", recipient);
-    char statusMessage[512];
-    char simStatus[256];
+    char statusMessage[256];
+    char simStatus[128];
     char powerStatus[16];
     
     char buffer[128];
@@ -315,8 +344,8 @@ void sim900_send_full_status_sms_to(const char* recipient)
     snprintf(powerStatus, sizeof(powerStatus), "%s", powerOk ? "OK" : "Lost");
     int nbContacts = countDefinedContacts();
     snprintf(statusMessage, sizeof(statusMessage),
-             "%s\nTemperature: %.2f C\nPower: %s\nBattery voltage: %.2f\nNb contacts: %d",
-             simStatus, g_temperatureAvg, powerStatus, g_batteryVoltage, nbContacts);
+             "Last start:\n  %s\n%s\nTemperature: %.2f C\nPower: %s\nBattery voltage: %.2f\nNb contacts: %d",
+             g_startTime, simStatus, g_temperatureAvg, powerStatus, g_batteryVoltage, nbContacts);
     ESP_LOGI(TAG, "Full status SMS message: %s", statusMessage);
     sim900_send_sms(recipient, statusMessage);
 }
@@ -492,7 +521,7 @@ static void process_sms_command(const char* command, int contactIndex) {
 
 void sim900_task_check_sms(void *pvParameters) {
   ESP_LOGI(TAG, "Starting SMS check task.");
-  char response[512];
+  char response[256];
   char commandBuffer[64];
   for (;;) {
     ESP_LOGD(TAG, "Average temperature: %.2f", g_temperatureAvg);
