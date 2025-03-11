@@ -344,7 +344,7 @@ void sim900_send_full_status_sms_to(const char* recipient)
     snprintf(powerStatus, sizeof(powerStatus), "%s", powerOk ? "OK" : "Lost");
     int nbContacts = countDefinedContacts();
     snprintf(statusMessage, sizeof(statusMessage),
-             "Last start:\n  %s\n%s\nTemperature: %.2f C\nPower: %s\nBattery voltage: %.2f\nNb contacts: %d",
+             "Last start:\n  %s\n%s\nTemperature: %.2f C\nPower: %s\nBattery voltage: %.2f volts\nNb contacts: %d",
              g_startTime, simStatus, g_temperatureAvg, powerStatus, g_batteryVoltage, nbContacts);
     ESP_LOGI(TAG, "Full status SMS message: %s", statusMessage);
     sim900_send_sms(recipient, statusMessage);
@@ -494,24 +494,28 @@ static void process_delete_command(const char* command, int senderContactIndex) 
 // Processes the SMS command given the command text and contact index.
 static void process_sms_command(const char* command, int contactIndex) {
     if (strncmp(command, "update contact", 7) == 0) {
-        ESP_LOGI(TAG, "Updating contact!");
-         process_update_command(command, contactIndex);
+      ESP_LOGI(TAG, "Updating contact!");
+      process_update_command(command, contactIndex);
     } else if (strncmp(command, "delete contact", 7) == 0) {
-        ESP_LOGI(TAG, "Updating contact!");
-         process_delete_command(command, contactIndex);
+      ESP_LOGI(TAG, "Updating contact!");
+      process_delete_command(command, contactIndex);
     } else if (strcmp(command, "enable alerting") == 0) {
-         g_alertingEnabled = true;
-         ESP_LOGI(TAG, "Alerting enabled via SMS command.");
-         sim900_send_sms(g_contacts[contactIndex].phone, "Alerting enabled.");
+      g_alertingEnabled = true;
+      ESP_LOGI(TAG, "Alerting enabled via SMS command.");
+      sim900_send_sms(g_contacts[contactIndex].phone, "Alerting enabled.");
     } else if (strcmp(command, "disable alerting") == 0) {
-         g_alertingEnabled = false;
-         ESP_LOGI(TAG, "Alerting disabled via SMS command.");
-         sim900_send_sms(g_contacts[contactIndex].phone, "Alerting disabled.");
+      g_alertingEnabled = false;
+      ESP_LOGI(TAG, "Alerting disabled via SMS command.");
+      sim900_send_sms(g_contacts[contactIndex].phone, "Alerting disabled.");
     } else if (strcmp(command, "status") == 0) {
-         ESP_LOGI(TAG, "Status command received.");
-         sim900_send_full_status_sms_to(g_contacts[contactIndex].phone);
+      ESP_LOGI(TAG, "Status command received.");
+      sim900_send_full_status_sms_to(g_contacts[contactIndex].phone);
+    } else if (strcmp(command, "reboot device") == 0) {
+      ESP_LOGI(TAG, "Reboot command received, restarting ESP32.");
+      sim900_send_sms(g_contacts[contactIndex].phone, "Rebooting ESP32...");
+      esp_restart();
     } else {
-         ESP_LOGW(TAG, "Unknown command received: '%s'", command);
+      ESP_LOGW(TAG, "Unknown command received: '%s'", command);
     }
 }
 
